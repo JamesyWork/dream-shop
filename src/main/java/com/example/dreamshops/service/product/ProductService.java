@@ -1,19 +1,20 @@
 package com.example.dreamshops.service.product;
 
+import com.example.dreamshops.dto.ImageDTO;
+import com.example.dreamshops.dto.ProductDTO;
 import com.example.dreamshops.exception.ProductNotFoundException;
 import com.example.dreamshops.model.Category;
+import com.example.dreamshops.model.Image;
 import com.example.dreamshops.model.Product;
 import com.example.dreamshops.repository.CategoryRepository;
+import com.example.dreamshops.repository.ImageRepository;
 import com.example.dreamshops.repository.ProductRepository;
 import com.example.dreamshops.request.AddProductRequest;
 import com.example.dreamshops.request.UpdateProductRequest;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,6 +23,8 @@ import java.util.Optional;
 public class ProductService implements IProductService{
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ModelMapper modelMapper;
+    private final ImageRepository imageRepository;
 
     @Override
     public Product addProduct(AddProductRequest request) {
@@ -108,4 +111,21 @@ public class ProductService implements IProductService{
     public Long countProductsByBrandAndName(String brand, String name) {
         return productRepository.countByBrandAndName(brand, name);
     }
+
+    @Override
+    public List<ProductDTO> getConvertedProducts(List<Product> products) {
+        return products.stream().map(this::convertToDto).toList();
+    }
+
+    @Override
+    public ProductDTO convertToDto(Product product) {
+        ProductDTO productDto = modelMapper.map(product, ProductDTO.class);
+        List<Image> images = imageRepository.findByProductId(product.getId());
+        List<ImageDTO> imageDTOS = images.stream()
+                .map(image -> modelMapper.map(image, ImageDTO.class))
+                .toList();
+        productDto.setImages(imageDTOS);
+        return productDto;
+    }
+
 }
